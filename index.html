@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0f0b">
+  <title>OREON EXCHANGE</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --g: #25d366;
+      --bg: #0a0f0b;
+      --card-bg: #131a15;
+      --border: #1f2b22;
+      --text: #ffffff;
+      --muted: #849688;
+      --dim: #4a5c4f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      -webkit-user-select: none;
+      user-select: none;
+      padding-bottom: 80px;
+    }
+    .app { max-width: 500px; margin: 0 auto; padding: 16px; }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 16px;
+    }
+    .logo {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      color: var(--g);
+    }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    h2 { font-size: 16px; font-weight: 700; margin: 18px 0 10px; color: #d0e0d4; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    
+    .rates-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .rate-box { text-align: center; }
+    .rate-box small { color: var(--muted); font-size: 12px; display: block; margin-bottom: 4px; }
+    .rate-box b { font-size: 18px; color: var(--g); }
+
+    .buy-section { text-align: center; }
+    .buy-title { font-size: 14px; font-weight: bold; color: var(--muted); margin-bottom: 8px; }
+    .buy-rates { display: flex; justify-content: space-around; font-size: 16px; font-weight: bold; }
+    .buy-rates span span { color: var(--g); }
+
+    .bank-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(31, 43, 34, 0.5);
+      font-size: 14px;
+    }
+    .bank-item:last-child { border-bottom: none; }
+    .bank-item span:last-child { color: var(--g); font-weight: bold; }
+
+    .sub-note {
+      font-size: 12px;
+      color: var(--dim);
+      text-align: center;
+      margin: 8px 0 20px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--g);
+      color: #000;
+      font-weight: 800;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn:active { opacity: 0.8; }
+
+    /* ПРОФИЛЬ */
+    .user-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+    .avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--border); object-fit: cover; border: 2px solid var(--g); }
+    .user-name { font-size: 18px; font-weight: bold; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+    .stat-card { text-align: center; padding: 10px 6px; }
+    .stat-card small { font-size: 10px; color: var(--muted); display: block; margin-bottom: 4px; }
+    .stat-card b { font-size: 13px; color: #fff; }
+
+    .balance-box { font-size: 16px; margin: 16px 0; text-align: center; }
+    .balance-box b { color: var(--g); font-size: 20px; }
+
+    .menu-item {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .menu-item span.arrow { color: var(--muted); }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* Навигация */
+    nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: rgba(10, 15, 11, 0.95);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
+      backdrop-filter: blur(10px);
+    }
+    nav button {
+      background: none; border: none;
+      color: var(--muted);
+      font-size: 12px; font-weight: bold;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      cursor: pointer;
+    }
+    nav button.active { color: var(--g); }
+    nav button i { font-style: normal; font-size: 18px; }
+
+    /* Модальные окна */
+    .modal {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 10;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal.active { display: flex; }
+    .modal-content {
+      background: var(--card-bg);
+      border-top: 1px solid var(--border);
+      border-radius: 20px 20px 0 0;
+      padding: 20px;
+      width: 100%; max-width: 500px;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    .modal-content h3 { margin-top: 0; font-size: 18px; }
+    .close-btn { background: var(--border); color: #fff; border: none; padding: 10px; border-radius: 8px; width: 100%; margin-top: 12px; font-weight: bold; }
+
+    .input-field {
+      width: 100%;
+      padding: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #fff;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    textarea.input-field { height: 90px; resize: none; }
+    .pay-btn {
+      display: block; width: 100%; text-align: center; text-decoration: none;
+      padding: 12px; background: #1a291e; border: 1px solid var(--g); color: var(--g);
+      border-radius: 10px; font-weight: bold; margin-bottom: 8px;
+    }
+    .pay-notice { font-size: 12px; color: #a4c4ac; text-align: center; margin-top: 14px; line-height: 1.4; }
+    .copy-box { background: var(--bg); border: 1px dashed var(--border); padding: 10px; border-radius: 8px; word-break: break-all; font-size: 12px; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="logo">OREON EXCHANGE</div>
+    </header>
+
+    <!-- СТРАНИЦА: ОБМЕН -->
+    <section id="page-exchange" class="page active">
+      <div class="card rates-grid">
+        <div class="rate-box">
+          <small>Курс Tether (USDT)</small>
+          <b>81.82 ₽</b>
+        </div>
+        <div class="rate-box">
+          <small>Курс GRAM</small>
+          <b>89.95 ₽</b>
+        </div>
+      </div>
+
+      <div class="card buy-section">
+        <div class="buy-title">Покупаем</div>
+        <div class="buy-rates">
+          <span>USDT — <span>96.38 ₽</span></span>
+          <span>GRAM — <span>103.1 ₽</span></span>
+        </div>
+      </div>
+
+      <h2>Карты</h2>
+      <div class="card">
+        <div class="bank-item"><span>Т Банк</span><span>4500 ₽</span></div>
+        <div class="bank-item"><span>Сбер</span><span>4500 ₽</span></div>
+        <div class="bank-item"><span>Райффайзен</span><span>5000 ₽</span></div>
+        <div class="bank-item"><span>Синара</span><span>2000 ₽</span></div>
+        <div class="bank-item"><span>Озон + Юмани</span><span>1000 ₽</span></div>
+      </div>
+      <div class="sub-note">Покупка доступна от 4 штук.</div>
+
+      <button class="btn" onclick="openModal('modal-exchange-options')">ОБМЕНЯТЬ</button>
+    </section>
+
+    <!-- СТРАНИЦА: ПРОФИЛЬ -->
+    <section id="page-profile" class="page">
+      <div class="user-header">
+        <img id="user-avatar" class="avatar" src="https://via.placeholder.com/56/131a15/25d366?text=U" alt="Avatar">
+        <div class="user-name" id="user-username">@username</div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="card stat-card">
+          <small>ОБОРОТ</small>
+          <b>0 ₽</b>
+        </div>
+        <div class="card stat-card">
+          <small>КУПЛЕННЫЕ КАРТЫ</small>
+          <b>0</b>
+        </div>
+        <div class="card stat-card">
+          <small>СТАТУС</small>
+          <b>Процессер</b>
+        </div>
+      </div>
+
+      <div class="card balance-box">
+        Баланс: <b>0 ₽</b>
+      </div>
+
+      <div class="menu-item" onclick="openModal('modal-bind-card')">
+        <span>💳 Привязать карту</span>
+        <span class="arrow">›</span>
+      </div>
+
+      <div class="menu-item" onclick="openModal('modal-address')">
+        <span>📍 Адрес</span>
+        <span class="arrow">›</span>
+      </div>
+
+      <div class="grid-2">
+        <div class="menu-item" onclick="openModal('modal-staff')">
+          <span>👥 Сотрудники</span>
+          <span class="arrow">›</span>
+        </div>
+        <div class="menu-item" onclick="openModal('modal-support')">
+          <span>💬 Поддержка</span>
+          <span class="arrow">›</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- НИЖНЯЯ НАВИГАЦИЯ -->
+  <nav>
+    <button id="nav-exchange" class="active" onclick="switchPage('exchange')">
+      <i>🔄</i>Обмен
+    </button>
+    <button id="nav-profile" onclick="switchPage('profile')">
+      <i>👤</i>Профиль
+    </button>
+  </nav>
+
+  <!-- МОДАЛКИ ОБМЕНА -->
+  <div id="modal-exchange-options" class="modal" onclick="closeOnBackdrop(event, this)">
+    <div class="modal-content">
+      <h3>Выберите валюту обмена</h3>
+      <button class="btn" style="margin-bottom: 10px;" onclick="selectCurrency('USDT')">USDT</button>
+      <button class="btn" onclick="selectCurrency('GRAM')">GRAM</button>
+      <button class="close-btn" onclick="closeModal('modal-exchange-options')">Закрыть</button>
+    </div>
+  </div>
+
+  <div id="modal-pay-methods" class="modal" onclick="closeOnBackdrop(event, this)">
+    <div class="modal-content">
+      <h3 id="pay-modal-title">Способ пополнения</h3>
+      <a class="pay-btn" href="https://t.me/xrocket?start=inv_t7UlQkqzuwFOKFN" target="_blank">Xrocket</a>
+      <a class="pay-btn" href="https://t.me/send?start=IV2EkQwWozeG" target="_blank">CryptoBot</a>
+      <button class="pay-btn" style="background: none;" onclick="openGramAddress()">GRAM</button>
+
+      <div class="pay-notice">
+        При поступлении средств, вы сможете вывести их себе на карту от Физ.Лица до 30 минут
+      </div>
+      <button class="close-btn" onclick="closeModal('modal-pay-methods')">Закрыть</button>
+    </div>
+  </div>
+
+  <div id="modal-gram-addr" class="modal" onclick="closeOnBackdrop(event, this)">
+    <div class="modal-content">
+      <h3>Реквизиты GRAM (TON)</h3>
+      <p style="font-size: 13px; color: var(--muted);">Ваш постоянный адрес:</p>
+      <div class="copy-box" onclick="navigator.clipboard.writeText('UQDq7QvfaPVptNDgvD3tagEfUofP-R1ouPBmp-iys3xnhXhp'); alert('Адрес скопирован!');">
+        UQDq7QvfaPVptNDgvD3tagEfUofP-R1ouPBmp-iys3xnhXhp
+      </div>
+      <p style="font-size: 13px; color: var(--g); margin-top: 10px;">Сеть: TON</p>
+      
+      <div class="pay-notice">
+        При поступлении средств, вы сможете вывести их себе на карту от Физ.Лица до 30 минут
+      </div>
+      <button class="close-btn" onclick="closeModal('modal-gram-addr')">Назад</button>
+    </div>
+  </div>
+
+  <!-- МОДАЛКИ ПРОФИЛЯ -->
+  <div id="modal-bind-card" class="modal" onclick="closeOnBackdrop(event, this)">
+    <div class="modal-content">
+      <h3>Привязать карту</h3>
+      <input id="card-num" class="input-field" type="text" placeholder="Номер карты">
+      <input id="card-bank" class="input-field" type="text" placeholder="Банк">
+      <input id="card-fio" class="input-field" type="text" placeholder="ФИО владельца">
+      <button class="btn" onclick="saveCardData()">Сохранить данные</button>
+      <button class="close-btn" onclick="closeModal('modal-bind-card')">Отмена</button>
+    </div>
+  </div>
+
+  <div id="modal-address" class="modal" onclick="closeOnBackdrop(event, this)">
+    <div class="modal-content">
+      <h3>Наш адрес</h3>
+      <p style="font-size: 14px; line-height: 1.5; color: #d0e0d4;">
+        Москва. Москва-Сити, Пресненская наб. 12, башня Федерация. 23 этаж, офис N 12
+      </p>
+      <button class="close-btn" onclick="closeModal('modal-address')">Закрыть</button>
+    </div>
+  </div>
+
+  <div id="modal-staff" class="modal" onclick="closeOnBackdrop(event, this)">
+    <div class="modal-content">
+      <h3>Сотрудники</h3>
+      <div style="font-size: 14px; line-height: 1.8;">
+        <div><b>Дмитрий Эдуардович</b> — Оператор</div>
+        <div><b>Алина Романовна</b> — Оператор</div>
+        <div><b>Степан Андреевич</b> — Менеджер карт</div>
+        <div><b>Иван Александрович</b> — Трафик-Менеджер</div>
+        <div><b>Рамзан Расулович</b> — Кассир</div>
+        <div><b>Михаил Николаевич</b> — Директор</div>
+      </div>
+      <button class="close-btn" onclick="closeModal('modal-staff')">Закрыть</button>
+    </div>
+  </div>
+
+  <div id="modal-support" class="modal" onclick="closeOnBackdrop(event, this)">
+    <div class="modal-content">
+      <h3>Поддержка / Жалоба</h3>
+      <input class="input-field" type="text" value="Причина претензии" readonly style="color: var(--muted);">
+      <textarea id="support-text" class="input-field" placeholder="1. ИО сотрудника&#10;2. ИО кому претензия&#10;3. Суть претензии"></textarea>
+      <button class="btn" onclick="sendSupportForm()">Отправить</button>
+      <button class="close-btn" onclick="closeModal('modal-support')">Отмена</button>
+    </div>
+  </div>
+
+  <script>
+    // Инициализация WebApp Telegram
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      
+      const user = tg.initDataUnsafe?.user;
+      if (user) {
+        document.getElementById('user-username').textContent = user.username ? `@${user.username}` : `${user.first_name || 'Пользователь'}`;
+        if (user.photo_url) {
+          document.getElementById('user-avatar').src = user.photo_url;
+        }
+      }
+    }
+
+    // Переключение страниц
+    function switchPage(pageName) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+
+      document.getElementById(`page-${pageName}`).classList.add('active');
+      document.getElementById(`nav-${pageName}`).classList.add('active');
+    }
+
+    // Модальные окна
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    function closeOnBackdrop(e, el) { if (e.target === el) el.classList.remove('active'); }
+
+    // Выбор валюты
+    function selectCurrency(curr) {
+      closeModal('modal-exchange-options');
+      document.getElementById('pay-modal-title').textContent = `Пополнение (${curr})`;
+      openModal('modal-pay-methods');
+    }
+
+    function openGramAddress() {
+      closeModal('modal-pay-methods');
+      openModal('modal-gram-addr');
+    }
+
+    // Сохранение привязанной карты
+    function saveCardData() {
+      const num = document.getElementById('card-num').value.trim();
+      const bank = document.getElementById('card-bank').value.trim();
+      const fio = document.getElementById('card-fio').value.trim();
+
+      if (!num || !bank || !fio) {
+        alert('Пожалуйста, заполните все поля!');
+        return;
+      }
+
+      localStorage.setItem('userCardData', JSON.stringify({ num, bank, fio }));
+      alert('Данные карты успешно сохранены!');
+      closeModal('modal-bind-card');
+    }
+
+    // Автоподгрузка сохраненной карты при открытии
+    const savedCard = localStorage.getItem('userCardData');
+    if (savedCard) {
+      const data = JSON.parse(savedCard);
+      document.getElementById('card-num').value = data.num || '';
+      document.getElementById('card-bank').value = data.bank || '';
+      document.getElementById('card-fio').value = data.fio || '';
+    }
+
+    // Отправка формы поддержки
+    function sendSupportForm() {
+      const text = document.getElementById('support-text').value.trim();
+      if (!text) {
+        alert('Заполните поле претензии!');
+        return;
+      }
+      const username = prompt('Укажите ваш @username в Telegram:');
+      if (username) {
+        alert('Ваша жалоба успешно отправлена!');
+        document.getElementById('support-text').value = '';
+        closeModal('modal-support');
+      }
+    }
+  </script>
+</body>
+</html>
